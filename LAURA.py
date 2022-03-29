@@ -37,6 +37,15 @@ inlier_cloud = pcd2.select_by_index(inliers)
 outlier_cloud = pcd2.select_by_index(inliers,invert=True)
 inlier_cloud.paint_uniform_color([0,1.0,0])
 
+pcd3 = outlier_cloud
+
+# El threshol es la grosor del plano dominante
+plane_model, inliers = pcd3.segment_plane(distance_threshold = 0.025,ransac_n=3,num_iterations=1000)
+# [a,b,c,d] = plane_model
+inlier_cloud = pcd3.select_by_index(inliers)
+outlier_cloud = pcd3.select_by_index(inliers,invert=True)
+inlier_cloud.paint_uniform_color([0,1.0,0])
+
 
 # Mostrar nube de puntos
-o3d.visualization.draw_geometries([inlier_cloud,outlier_cloud])
+o3d.visualization.draw_geometries([outlier_cloud])
