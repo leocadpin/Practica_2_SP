@@ -2,7 +2,6 @@ import open3d as o3d
 import numpy as np
 import copy
 
-
 # Crear nube de puntos
 pcd = o3d.geometry.PointCloud()
 
@@ -11,8 +10,6 @@ for i in range(100):
 	for j in range(100):
 		points.append([i,j,0])
 pcd.points = o3d.utility.Vector3dVector(np.array(points))
-
-
 
 # Leer nube de puntos
 pcd = o3d.io.read_point_cloud("snap_0point.pcd")
@@ -46,6 +43,8 @@ inlier_cloud = pcd3.select_by_index(inliers)
 outlier_cloud = pcd3.select_by_index(inliers,invert=True)
 inlier_cloud.paint_uniform_color([0,1.0,0])
 
+voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(outlier_cloud, voxel_size=0.005)
+o3d.visualization.draw_geometries([voxel_grid])
 
 # Mostrar nube de puntos
 o3d.visualization.draw_geometries([outlier_cloud])
