@@ -46,6 +46,24 @@ inlier_cloud = pcd3.select_by_index(inliers)
 outlier_cloud = pcd3.select_by_index(inliers,invert=True)
 inlier_cloud.paint_uniform_color([0,1.0,0])
 
+pcd3 = outlier_cloud
 
 # Mostrar nube de puntos
-o3d.visualization.draw_geometries([outlier_cloud])
+#o3d.visualization.draw_geometries([outlier_cloud]) 
+# 
+# # #tambien se ppued usar UNIFORM SAMPLING PARA RESUMIR PUNTOS
+
+print('input')
+#N = 2000
+#pcd = o3dtut.get_armadillo_mesh().sample_points_poisson_disk(N)
+# fit to unit cube
+#pcd3.scale(1 / np.max(pcd3.get_max_bound() - pcd3.get_min_bound()), #no es necesario para estae problema 
+          #center=pcd.get_center())
+#pcd3.colors = o3d.utility.Vector3dVector(np.random.uniform(0, 1, size=(N, 3)))
+o3d.visualization.draw_geometries([pcd3])
+
+print('voxelization')
+voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd3,
+                                                            voxel_size=0.01)
+o3d.visualization.draw_geometries([voxel_grid])
+
