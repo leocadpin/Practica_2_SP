@@ -1,7 +1,7 @@
 import open3d as o3d
 import numpy as np
 import copy
-
+import time
 
 # Crear nube de puntos
 pcd = o3d.geometry.PointCloud()
@@ -67,3 +67,8 @@ voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd3,
                                                             voxel_size=0.01)
 o3d.visualization.draw_geometries([voxel_grid])
 
+tic = time.time()
+keypoints = o3d.geometry.keypoint.compute_iss_keypoints(voxel_grid)
+toc = 1000 * (time.time() - tic)
+print("ISS Computation took {:.0f} [ms]".format(toc))
+o3d.visualization.draw_geometries([voxel_grid])
