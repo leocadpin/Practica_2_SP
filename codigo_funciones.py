@@ -16,6 +16,7 @@ def preprocess_point_cloud(pcd, voxel_size):
     # Extrae puntos característicos
     tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(pcd_voxel)
+    # pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(pcd_voxel, salient_radius=0.005, non_max_radius=0.005, gamma_21=?, gamma12=?)
     toc = 1000*(time.time() - tic)
 
     # print("ISS Computation took {:.0f} [ms]".format(toc))
@@ -88,7 +89,7 @@ o3d.visualization.draw_geometries([src_key])
 # o3d.visualization.draw_geometries([dst_key])
 # o3d.visualization.draw_geometries([dst_desc])
 
-# TODO:Computa los emparajamientos entre los descriptores
+# TODO: Computa los emparajamientos entre los descriptores
 # result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
 #     src_down,
 #     dst_down,
