@@ -32,7 +32,7 @@ def preprocess_point_cloud(pcd, voxel_size):
 
     # Calculamos los descriptores para los puntos característicos
     radius_normal = voxel_size*2
-    pcd_voxel.estimate_normals(                                                       # Estimación de normales
+    pcd_voxel.estimate_normals(                                                     # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))      # Buscamos vecinos cercanos (como máximo 30)
     
     radius_feature = voxel_size*5
@@ -56,7 +56,7 @@ def plane_elimination(pcd, threshold, ransac, it):
 def draw_registration_result(src, dst, transformation):
     src_temp = copy.deepcopy(src)
     dst_temp = copy.deepcopy(dst)
-    src_temp.paint_uniform_color([1, 0.706, 0])
+    # src_temp.paint_uniform_color([1, 0.706, 0])
     dst_temp.paint_uniform_color([0, 0.651, 0.929])
     src_temp.transform(transformation)
     o3d.visualization.draw_geometries([src_temp, dst_temp])
@@ -71,7 +71,8 @@ pcd.points = o3d.utility.Vector3dVector(np.array(points))
 
 # Leemos la nube de puntos creada
 pcd = o3d.io.read_point_cloud("snap_0point.pcd")        # Nube de puntos de la mesa
-planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
+# planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
+planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos de la planta
 
 # Definimos parámetros para las fucniones
 distance_threshold = 0.025
@@ -127,7 +128,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
-    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999))               # Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
+    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
 print(result_ransac)
 
 draw_registration_result(mesa, planta, result_ransac.transformation)
@@ -137,13 +138,48 @@ draw_registration_result(mesa, planta, result_ransac.transformation)
 # o3d.visualization.draw([planta.transform(result_ransac.transformation), mesa])
 
 # Refinamiento local de la registración de emparejamientos
-# distance_threshold = voxel_size*0.4
-# result_icp = o3d.pipelines.registration.registration_icp(
-#     mesa,
-#     planta,
-#     distance_threshold,
-#     result_ransac.transformation,
-#     o3d.pipelines.registration.TransformationEstimationPointToPlane())
-# print(result_icp)
+distance_threshold = voxel_size*0.4
 
-# draw_registration_result(mesa, planta, result_icp.transformation)
+src_temp = copy.deepcopy(pcd)
+dst_temp = copy.deepcopy(planta)
+
+radius_normal = voxel_size*2
+src_temp.estimate_normals(                                                          # Estimación de normales
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))      # Buscamos vecinos cercanos (como máximo 30)
+dst_temp.estimate_normals(                                                          # Estimación de normales
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))      # Buscamos vecinos cercanos (como máximo 30)
+
+result_icp = o3d.pipelines.registration.registration_icp(
+    src_temp,
+    dst_temp,
+    distance_threshold,
+    result_ransac.transformation,
+    o3d.pipelines.registration.TransformationEstimationPointToPlane())
+print(result_icp)
+
+draw_registration_result(pcd, planta, result_icp.transformation)
+
+# ERROR MEDIO
+# Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
+# Acumlamos las distancias
+# Dividimos entre la cantidad de puntos
+
+# ¿como tener normales fiables?
+# calculamos las normales de todos los puntos con radio chiquito
+# luego sacamos keypoints as usual
+# luego le decimos a los keypoints normales les corresponden
+
+# RESULTADO del ransac
+# fitness = inliers / total %
+# Inliers = p. dentro de umbral
+
+src_temp = copy.deepcopy(mesa)                      # Copia de la escena
+dst_temp = copy.deepcopy(planta)                    # Copia del objeto
+
+src_temp.transform(result_ransac.transformation)    # Transformación de la escena
+dst_temp.transform(result_ransac.transformation)    # Transformación del objeto
+
+pcd_tree = o3d.geometry.KDTreeFlann(src_temp)
+
+# TODO: Hay que tener un bucle para el objeto que busca coincidencias (vecinos) con los puntos de la escena
+# Obtener num de puntos de la nube del objetp !!!
