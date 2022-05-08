@@ -75,8 +75,9 @@ points = []
 
 # Leemos la nube de puntos creada
 pcd = o3d.io.read_point_cloud("snap_0point.pcd")        # Nube de puntos de la mesa
-planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
-#planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos de la planta
+#planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
+# planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos de la planta
+planta = o3d.io.read_point_cloud("s0_plc_corr.pcd")   # Nube de puntos de la planta
 
 # Definimos parámetros para las fucniones
 distance_threshold = 0.025
@@ -118,7 +119,7 @@ dst_voxel, dst_desc, dst_key = preprocess_point_cloud(planta, voxel_size)
 # o3d.visualization.draw_geometries([dst_desc])
 
 # TODO: Computa los emparajamientos entre los descriptores
-distance_threshold = 0.005*1.5
+distance_threshold = voxel_size*1.5
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                  # Nude de puntos de origen
     dst_key,                                                                                  # Nube de puntos de destino
@@ -177,23 +178,25 @@ draw_registration_result(pcd, planta, result_icp.transformation)
 # fitness = inliers / total %
 # Inliers = p. dentro de umbral
 
-src_temp = copy.deepcopy(mesa)                      # Copia de la escena
+src_temp = copy.deepcopy(pcd)
 dst_temp = copy.deepcopy(planta)                    # Copia del objeto
 
-src_temp.transform(result_ransac.transformation)    # Transformación de la escena
-dst_temp.transform(result_ransac.transformation)    # Transformación del objeto
+# src_temp.transform(result_ransac.transformation)    # Transformación del objeto
+src_temp.transform(result_icp.transformation)    # Transformación del objeto
 
-
-pcd_tree = o3d.geometry.KDTreeFlann(pcd)
+pcd_tree = o3d.geometry.KDTreeFlann(src_temp) #Lo creamos para buscar el vecino mas cercano 
 print(pcd_tree)
+
 # TODO: Hay que tener un bucle para el objeto que busca coincidencias (vecinos) con los puntos de la escena
 # Obtener num de puntos de la nube del objetp !!!
 
-# k_vector = []
-# num_points = len(np.asarray(pcd.points))
-# for i in range (num_points):
-#     p = pcd.points[i]
-#     [k, idx, dist] = pcd_tree.search_knn_vector_3d(p, 1)
-#     dist_vector.append(dist)
+dist_tot = 0
+num_points = len(np.asarray(dst_temp.points))
+for i in range (num_points):
+    p = dst_temp.points[i]
+    [k, idx, dist] = pcd_tree.search_knn_vector_3d(p, 1) #Le indicamos que queremos solo el vecino mas cercano al punto
+    dist_tot = dist_tot + dist[0]  
+print("El valor de error (viki marica) es: ")
+dist_tot = dist_tot/num_points
 
-#print(k_vector)    
+print(dist_tot) 
