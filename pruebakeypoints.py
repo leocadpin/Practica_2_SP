@@ -13,7 +13,7 @@ import time
 def preprocess_point_cloud(pcd, voxel_size):
     # Filtramos las nubes para reducir su tamaño
     
-    radius_normal = 0.01*2
+    radius_normal = 0.01
     pcd.estimate_normals(                                                     # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))      # Buscamos vecinos cercanos (como máximo 30)
     
@@ -33,22 +33,22 @@ def preprocess_point_cloud(pcd, voxel_size):
     tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=voxel_size*2,                        # TODO
-        non_max_radius=voxel_size*2,                        # TODO
+        salient_radius=0.005,                        # TODO
+        non_max_radius=0.005,                        # TODO
         gamma_21=0.5,                                       # TODO
         gamma_32=0.5  )                                     # TODO
     toc = 1000*(time.time() - tic)
     print(pcd_key)
     print("ISS Computation took {:.0f} [ms]".format(toc))
 
-    radius_feature = voxel_size
+    radius_feature = 0.01
     pcd_desc = o3d.pipelines.registration.compute_fpfh_feature(                     # TODO
         pcd_key,
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))    # Buscamos vecinos cercanos (como máximo 100)
 
     return pcd_voxel, pcd_desc, pcd_key
 
-# PLANOS DOMINANTES
+#FUNCION PARA ELIMINAR LOS PLANOS DOMINANTES
 def plane_elimination(pcd, threshold, ransac, it):
     _, inliers = pcd.segment_plane(
         distance_threshold=threshold,                           # Rango max/menos plano dominante. Al poner 1 pilla la mesa (en m) 
@@ -59,6 +59,7 @@ def plane_elimination(pcd, threshold, ransac, it):
     inlier_cloud.paint_uniform_color([1.0,0,0])                 # TODO
     return outlier_cloud
 
+#FUNCION PARA REPRESENTAR EL RESULTADO DE LA TRANSFORMACION 
 def draw_registration_result(src, dst, transformation):
     src_temp = copy.deepcopy(src)
     dst_temp = copy.deepcopy(dst)
@@ -70,21 +71,18 @@ def draw_registration_result(src, dst, transformation):
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
 points = []
-for i in range(100):
-	for j in range(100):
-		points.append([i,j,0])
-pcd.points = o3d.utility.Vector3dVector(np.array(points))
+
 
 # Leemos la nube de puntos creada
 pcd = o3d.io.read_point_cloud("snap_0point.pcd")        # Nube de puntos de la mesa
-# planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
-planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos de la planta
+planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")   # Nube de puntos de la planta
+#planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos de la planta
 
 # Definimos parámetros para las fucniones
 distance_threshold = 0.025
 ransac_n = 3
 num_iterations = 1000
-voxel_size = 0.005
+voxel_size = 0.0005
 
 # Eliminamos los planos dominantes de grosor threshold = 0,025
 pcd1 = plane_elimination(pcd, distance_threshold, ransac_n, num_iterations)
@@ -120,7 +118,7 @@ dst_voxel, dst_desc, dst_key = preprocess_point_cloud(planta, voxel_size)
 # o3d.visualization.draw_geometries([dst_desc])
 
 # TODO: Computa los emparajamientos entre los descriptores
-distance_threshold = 0.01
+distance_threshold = 0.005*1.5
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                  # Nude de puntos de origen
     dst_key,                                                                                  # Nube de puntos de destino
@@ -191,11 +189,11 @@ print(pcd_tree)
 # TODO: Hay que tener un bucle para el objeto que busca coincidencias (vecinos) con los puntos de la escena
 # Obtener num de puntos de la nube del objetp !!!
 
-k_vector = []
-num_points = len(np.asarray(pcd.points))
-for i in range (num_points):
-    p = pcd.points[i]
-    [k, idx, dist] = pcd_tree.search_knn_vector_3d(p, 1)
-    dist_vector.append(dist)
+# k_vector = []
+# num_points = len(np.asarray(pcd.points))
+# for i in range (num_points):
+#     p = pcd.points[i]
+#     [k, idx, dist] = pcd_tree.search_knn_vector_3d(p, 1)
+#     dist_vector.append(dist)
 
 #print(k_vector)    
