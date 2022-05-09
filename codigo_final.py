@@ -108,7 +108,7 @@ dst_voxel, dst_desc, dst_key = preprocess_point_cloud(planta, voxel_size)   # OB
 # o3d.visualization.draw_geometries([dst_key])
 
 # Computamos los emparejamientos entre los descriptores
-distance_threshold = voxel_size*1.5                                                             # TODO: Distancia entre los puntos (???)
+distance_threshold = voxel_size*1.5                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                    # Nude de puntos de origen (con kyepoints)
     dst_key,                                                                                    # Nube de puntos de destino (con kyepoints)
@@ -137,7 +137,7 @@ src_temp.estimate_normals(                                                      
 dst_temp.estimate_normals(                                                      # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = voxel_size*0.4                                             # TODO: Umbral (???)
+distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
     src_temp,                                                                   # Nube de puntos del origen
     dst_temp,                                                                   # Nube de puntos del destino
