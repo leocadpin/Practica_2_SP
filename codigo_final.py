@@ -81,9 +81,9 @@ pcd = o3d.geometry.PointCloud()
 
 # Leemos la nube de puntos creada
 pcd = o3d.io.read_point_cloud("snap_0point.pcd")            # Nube de puntos de la escena
-# planta = o3d.io.read_point_cloud("s0_plant_corr.pcd")       # Nube de puntos de la planta
-# planta = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos del peluche
-planta = o3d.io.read_point_cloud("s0_plc_corr.pcd")         # Nube de puntos del plc
+objeto = o3d.io.read_point_cloud("s0_plant_corr.pcd")       # Nube de puntos de la planta
+# objeto = o3d.io.read_point_cloud("s0_piggybank_corr.pcd")   # Nube de puntos del peluche
+# objeto = o3d.io.read_point_cloud("s0_plc_corr.pcd")         # Nube de puntos del plc
 
 # Definimos los parámetros para las fucniones
 distance_threshold = 0.025
@@ -104,7 +104,7 @@ src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # ME
 # o3d.visualization.draw_geometries([src_voxel])
 # o3d.visualization.draw_geometries([src_key])
 
-dst_voxel, dst_desc, dst_key = preprocess_point_cloud(planta, voxel_size)   # OBJETO (destino)
+dst_voxel, dst_desc, dst_key = preprocess_point_cloud(objeto, voxel_size)   # OBJETO (destino)
 # o3d.visualization.draw_geometries([dst_voxel])
 # o3d.visualization.draw_geometries([dst_key])
 
@@ -126,11 +126,11 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
     criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
 print(result_ransac)
 
-draw_registration_result(mesa, planta, result_ransac.transformation)
+draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
 src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
-dst_temp = copy.deepcopy(planta)                                                # Copia de la nube del objeto
+dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
 
 radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
 src_temp.estimate_normals(                                                      # Estimación de normales
@@ -147,7 +147,7 @@ result_icp = o3d.pipelines.registration.registration_icp(
     o3d.pipelines.registration.TransformationEstimationPointToPlane())          # TODO: 
 print(result_icp)
 
-draw_registration_result(pcd, planta, result_icp.transformation)
+draw_registration_result(pcd, objeto, result_icp.transformation)
 
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
@@ -163,8 +163,8 @@ draw_registration_result(pcd, planta, result_icp.transformation)
 # fitness = inliers / total %
 # Inliers = p. dentro de umbral
 
-error_ransac = matching_error(pcd, planta, result_ransac.transformation)
-error_icp = matching_error(pcd, planta, result_icp.transformation)
+error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
+error_icp = matching_error(pcd, objeto, result_icp.transformation)
 
 print("El error de RANSAC:", error_ransac)
 print("El error de ICP:", error_icp)
