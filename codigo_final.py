@@ -56,6 +56,7 @@ def draw_registration_result(src, dst, transformation):
     src_temp.transform(transformation)                      # Transformación de la nube origen
     o3d.visualization.draw_geometries([src_temp, dst_temp]) # Visualizamos la unión de las nubes
 
+# FUNCIÓN PARA CALCULAR EL ERROR DE MATCHING
 def matching_error(src, dst, transformation):
     src_temp = copy.deepcopy(src)                               # Copia de la nube de origen
     dst_temp = copy.deepcopy(dst)                               # Copia de la nube de destino
