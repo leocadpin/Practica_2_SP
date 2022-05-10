@@ -187,7 +187,3 @@ error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
 error_icp = matching_error(pcd, objeto, result_icp.transformation)
 print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
-
-# Guardamos los parámetros de lad transformaciones
-np.save('ransac', result_ransac.transformation)
-np.save('icp', result_icp.transformation)
