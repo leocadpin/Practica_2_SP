@@ -22,8 +22,8 @@ def preprocess_point_cloud(pcd, voxel_size):
         pcd_voxel,                                          # Nube de puntos filtrada
         salient_radius=0.005,                               # TODO: 
         non_max_radius=0.005,                               # TODO: 
-        gamma_21=0.5,                                       # TODO: 
-        gamma_32=0.5  )                                     # TODO: 
+        gamma_21=0.5,                                       # TODO: Umbral
+        gamma_32=0.5  )                                     # TODO: Umbral (cuánto de parecido son los puntos)
     print(pcd_key)
     toc = 1000*(time.time() - tic)
     print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
