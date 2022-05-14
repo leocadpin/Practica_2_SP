@@ -138,7 +138,7 @@ toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
 
 
-draw_registration_result(mesa, objeto, result_ransac.transformation)
+# draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
 tic = time.time()
@@ -162,7 +162,7 @@ result_icp = o3d.pipelines.registration.registration_icp(
 toc = 1000*(time.time() - tic)
 print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 
-draw_registration_result(pcd, objeto, result_icp.transformation)
+# draw_registration_result(pcd, objeto, result_icp.transformation)
 
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
@@ -187,6 +187,14 @@ error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
 error_icp = matching_error(pcd, objeto, result_icp.transformation)
 print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
+
+o3d.visualization.draw_geometries([pcd, objeto]) # Visualizamos la unión de las nubes
+
+horseluis = o3d.io.read_point_cloud("horseluis.pcd")     
+
+pcd.scale(800, center=pcd.get_center()) 
+draw_registration_result(pcd, horseluis, result_icp.transformation)
+o3d.visualization.draw_geometries([pcd, horseluis]) # Visualizamos la unión de las nubes
 
 # Guardamos los parámetros de lad transformaciones
 np.save('ransac', result_ransac.transformation)
