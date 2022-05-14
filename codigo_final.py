@@ -137,7 +137,6 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
 
-
 draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
@@ -189,5 +188,5 @@ print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
 
 # Guardamos los parámetros de lad transformaciones
-np.save('ransac', result_ransac.transformation)
-np.save('icp', result_icp.transformation)
+# np.save('ransac', result_ransac.transformation)
+# np.save('icp', result_icp.transformation)

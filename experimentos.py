@@ -22,8 +22,8 @@ def preprocess_point_cloud(pcd, voxel_size):
         pcd_voxel,                                          # Nube de puntos filtrada
         salient_radius=0.005,                               # TODO: 
         non_max_radius=0.005,                               # TODO: 
-        gamma_21=0.5,                                       # TODO: 
-        gamma_32=0.5  )                                     # TODO: 
+        gamma_21=0.5,                                       # TODO: Umbral
+        gamma_32=0.5  )                                     # TODO: Umbral (cuánto de parecido son los puntos)
     print(pcd_key)
     toc = 1000*(time.time() - tic)
     print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
@@ -76,6 +76,10 @@ def matching_error(src, dst, transformation):
     error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
 
     return error
+
+# Cargamos las transformaciones guardadas
+np.load('icp.npy')
+np.load('ransac.npy')
 
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
@@ -137,7 +141,6 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
 
-
 draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
@@ -187,3 +190,7 @@ error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
 error_icp = matching_error(pcd, objeto, result_icp.transformation)
 print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
+
+# Guardamos los parámetros de lad transformaciones
+np.save('ransac', result_ransac.transformation)
+np.save('icp', result_icp.transformation)
