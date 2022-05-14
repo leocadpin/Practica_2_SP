@@ -20,8 +20,8 @@ def preprocess_point_cloud(pcd, voxel_size):
     tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=0.005,                               # TODO: 
-        non_max_radius=0.005,                               # TODO: 
+        salient_radius=0.005*2,                               # TODO: 
+        non_max_radius=0.005*2,                               # TODO: 
         gamma_21=0.5,                                       # TODO: Umbral
         gamma_32=0.5  )                                     # TODO: Umbral (cuánto de parecido son los puntos)
     print(pcd_key)
@@ -77,9 +77,41 @@ def matching_error(src, dst, transformation):
 
     return error
 
+def error_referencia(src, t1, t2):
+
+    src_ref = copy.deepcopy(src)
+    src_actual = copy.deepcopy(src)
+
+    print(t1)
+    print(t2)
+    src_ref.transform(t1)
+    src_actual.transform(t2)
+
+    num_points = len(np.asarray(src_actual.points))               # Número de puntos de la nube destino (objeto)
+    dist_tot = 0
+    for i in range (num_points):                                # Para cada punto del objeto
+        p1 = src_actual.points[i]
+        
+        p2 = src_ref.points[i]                                  # Cogemos un punto
+        
+        dist = np.linalg.norm(p1-p2)
+                                                                # (dist) Sacamos la distancia entre el punto p y su vecino
+        dist_tot = dist_tot + dist                           # Acumulamos las distancias encontradas
+   
+    error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
+
+    # dist = src_actual.compute_point_cloud_distance(src_ref)
+    # # print(dist)
+    # s_dist = sum(dist)
+    # l_dist = len(dist)
+    # error = s_dist/l_dist
+    return error
+
+
+
 # Cargamos las transformaciones guardadas
-np.load('icp.npy')
-np.load('ransac.npy')
+icp_ref = np.load('icp.npy')
+ransac_ref =  np.load('ransac.npy')
 
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
@@ -141,7 +173,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
 
-draw_registration_result(mesa, objeto, result_ransac.transformation)
+# draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
 tic = time.time()
@@ -167,6 +199,8 @@ print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 
 draw_registration_result(pcd, objeto, result_icp.transformation)
 
+print(result_ransac.transformation)
+
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
 # Acumlamos las distancias
@@ -188,9 +222,20 @@ print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 # Calculamos el error de matching de las nubes
 error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
 error_icp = matching_error(pcd, objeto, result_icp.transformation)
-print("Error de RANSAC:", error_ransac)
-print("Error de ICP:", error_icp)
+error_ref_ransac = error_referencia(pcd, ransac_ref, result_ransac.transformation)
+error_ref_icp = error_referencia(pcd, icp_ref, result_icp.transformation)
 
-# Guardamos los parámetros de lad transformaciones
-np.save('ransac', result_ransac.transformation)
-np.save('icp', result_icp.transformation)
+
+print("Error de RANSAC:", error_ransac)
+print("Error de referencia para Ransac:", error_ref_ransac)
+print("Error de ICP:", error_icp)
+print("Error de referencia para ICP:", error_ref_icp)
+
+
+
+
+
+
+# # Guardamos los parámetros de lad transformaciones
+# np.save('ransac', result_ransac.transformation)
+# np.save('icp', result_icp.transformation)
