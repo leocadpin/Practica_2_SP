@@ -77,6 +77,26 @@ def matching_error(src, dst, transformation):
 
     return error
 
+# def error_referencia(src, t1, t2):
+
+#     src_ref = copy.deepcopy(src)
+#     src_actual = copy.deepcopy(src)
+
+#     src_ref.transform(t1)
+#     src_actual.transform(t2)
+
+#     num_points = len(np.asarray(src_actual.points))               # Número de puntos de la nube destino (objeto)
+#     for i in range (num_points):                                # Para cada punto del objeto
+#         p1 = src_actual.points[i]
+#         p2 = src_ref.points[i]                                  # Cogemos un punto
+#         dist=p1-p2
+#                                                                 # (dist) Sacamos la distancia entre el punto p y su vecino
+#         dist_tot = dist_tot + dist                           # Acumulamos las distancias encontradas
+#     error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
+
+
+
+
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
 
@@ -187,6 +207,6 @@ error_icp = matching_error(pcd, objeto, result_icp.transformation)
 print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
 
-# Guardamos los parámetros de lad transformaciones
+# # Guardamos los parámetros de lad transformaciones
 # np.save('ransac', result_ransac.transformation)
 # np.save('icp', result_icp.transformation)
