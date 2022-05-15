@@ -6,16 +6,19 @@ import time
 # FUNCIÓN PARA FILTRAR LA NUBE DE PUNTOS Y SACAR SUS KEYPOINTS Y DESCRIPTORES
 def preprocess_point_cloud(pcd, voxel_size):
     # Estimación de normales
+    tic = time.time()
     radius_normal = 0.01                                                        # TODO: Radio para las normales
     pcd.estimate_normals(                                                       
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
-    
+    toc = 1000*(time.time() - tic)
+    print("Tiempo de las normales: {:.0f} [ms]".format(toc))
+
     # Filtramos las nubes para reducir su tamaño
-    tic = time.time()
+    # tic = time.time()
     pcd_voxel = pcd.voxel_down_sample(voxel_size)
     # print(pcd_voxel)
-    toc = 1000*(time.time() - tic)
-    print("Tiempo de los voxels: {:.0f} [ms]".format(toc))
+    # toc = 1000*(time.time() - tic)
+    # print("Tiempo de los voxels: {:.0f} [ms]".format(toc))
        
     # Extraemos los puntos característicos
     tic = time.time()
@@ -30,10 +33,13 @@ def preprocess_point_cloud(pcd, voxel_size):
     print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
     
     # Calculamos los descriptores para los puntos característicos
-    radius_feature = 0.01                                                           # TODO: Radio para FPFH
+    tic = time.time()
+    radius_feature = 0.01                                                          # TODO: Radio para FPFH
     pcd_desc = o3d.pipelines.registration.compute_fpfh_feature(
         pcd_key,                                                                    # Nube de puntos de keypoints
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))    # Buscamos vecinos cercanos (como máximo 100)
+    toc = 1000*(time.time() - tic)
+    print("Tiempo de los descriptores: {:.0f} [ms]".format(toc))
 
     return pcd_voxel, pcd_desc, pcd_key
 
@@ -170,7 +176,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
     criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
-print(result_ransac)
+# print(result_ransac)
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
 draw_registration_result(mesa, objeto, result_ransac.transformation)
