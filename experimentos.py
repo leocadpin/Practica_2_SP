@@ -11,8 +11,11 @@ def preprocess_point_cloud(pcd, voxel_size):
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
     
     # Filtramos las nubes para reducir su tamaño
+    tic = time.time()
     pcd_voxel = pcd.voxel_down_sample(voxel_size)
     # print(pcd_voxel)
+    toc = 1000*(time.time() - tic)
+    print("Tiempo de los voxels: {:.0f} [ms]".format(toc))
        
     # Extraemos los puntos característicos
     tic = time.time()
@@ -132,7 +135,7 @@ mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
 
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
-voxel_size = 0.005
+voxel_size = 0.0005
 
 tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
@@ -150,7 +153,7 @@ print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
 tic = time.time()
-distance_threshold = voxel_size*1.5
+distance_threshold = 0.0005*1.5
 # dd = 0.0005*1.5
 # print("max_correspondence_distance:", distance_threshold)                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
@@ -166,7 +169,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # TODO: Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
-    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
+    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
 print(result_ransac)
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
@@ -178,13 +181,13 @@ tic = time.time()
 src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
 dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
 
-radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
+radius_normal = 0.0005*2                                                    # TODO: Radio para las normales
 src_temp.estimate_normals(                                                      # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 dst_temp.estimate_normals(                                                      # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
+distance_threshold = 0.0005*0.4                                             # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
     src_temp,                                                                   # Nube de puntos del origen
     dst_temp,                                                                   # Nube de puntos del destino
