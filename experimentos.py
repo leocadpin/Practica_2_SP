@@ -77,26 +77,24 @@ def matching_error(src, dst, transformation):
 
     return error
 
-def error_referencia(src, t1, t2):
+# FUNCIÓN QUE CALCULA LA DISTANCIA DE LA TRANSFORMACIÓN RESPECTO A UNA REFERENCIA 
+def error_referencia(src, t1, t2): #(nube de la escena, tranformación referencia, transformación calculada actual)
 
-    src_ref = copy.deepcopy(src)
+    src_ref = copy.deepcopy(src)                                #Copiamos la escena dos veces
     src_actual = copy.deepcopy(src)
 
-    print(t1)
-    print(t2)
-    src_ref.transform(t1)
-    src_actual.transform(t2)
+    # print(t1)
+    # print(t2)
+    src_ref.transform(t1)                                       #Transformamos la nube aplicando la referencia
+    src_actual.transform(t2)                                    #Transformamos la nube aplicando la transformación actual
 
-    num_points = len(np.asarray(src_actual.points))               # Número de puntos de la nube destino (objeto)
+    num_points = len(np.asarray(src_actual.points))             # Número de puntos de ambas nubes
     dist_tot = 0
-    for i in range (num_points):                                # Para cada punto del objeto
-        p1 = src_actual.points[i]
-        
-        p2 = src_ref.points[i]                                  # Cogemos un punto
-        
-        dist = np.linalg.norm(p1-p2)
-                                                                # (dist) Sacamos la distancia entre el punto p y su vecino
-        dist_tot = dist_tot + dist                           # Acumulamos las distancias encontradas
+    for i in range (num_points):                                # Para cada par de puntos i de ambas nubes
+        p1 = src_actual.points[i]        
+        p2 = src_ref.points[i]                                          
+        dist = np.linalg.norm(p1-p2)                            #Calculamos la distancia euclídea entre ambos puntos
+        dist_tot = dist_tot + dist                              # Acumulamos las distancias encontradas
    
     error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
 
