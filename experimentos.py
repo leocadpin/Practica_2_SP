@@ -197,7 +197,7 @@ result_icp = o3d.pipelines.registration.registration_icp(
 toc = 1000*(time.time() - tic)
 print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 
-draw_registration_result(pcd, objeto, result_icp.transformation)
+# draw_registration_result(pcd, objeto, result_icp.transformation)
 
 
 
