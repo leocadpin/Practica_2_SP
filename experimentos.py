@@ -3,8 +3,6 @@ import numpy as np
 import copy
 import time
 
-start = time.time()
-
 # FUNCIÓN PARA FILTRAR LA NUBE DE PUNTOS Y SACAR SUS KEYPOINTS Y DESCRIPTORES
 def preprocess_point_cloud(pcd, voxel_size):
     # Estimación de normales
@@ -78,24 +76,22 @@ def matching_error(src, dst, transformation):
     return error
 
 # FUNCIÓN QUE CALCULA LA DISTANCIA DE LA TRANSFORMACIÓN RESPECTO A UNA REFERENCIA 
-def error_referencia(src, t1, t2): #(nube de la escena, tranformación referencia, transformación calculada actual)
-
-    src_ref = copy.deepcopy(src)                                #Copiamos la escena dos veces
+def error_referencia(src, t1, t2): # (nube de la escena, tranformación referencia, transformación calculada actual)
+    src_ref = copy.deepcopy(src)                                # Copiamos la escena dos veces
     src_actual = copy.deepcopy(src)
+    src_ref.transform(t1)                                       # Transformamos la nube aplicando la referencia
+    src_actual.transform(t2)                                    # Transformamos la nube aplicando la transformación actual
+    num_points = len(np.asarray(src_actual.points))             # Número de puntos de ambas nubes
+    dist_tot = 0
 
     # print(t1)
     # print(t2)
-    src_ref.transform(t1)                                       #Transformamos la nube aplicando la referencia
-    src_actual.transform(t2)                                    #Transformamos la nube aplicando la transformación actual
 
-    num_points = len(np.asarray(src_actual.points))             # Número de puntos de ambas nubes
-    dist_tot = 0
     for i in range (num_points):                                # Para cada par de puntos i de ambas nubes
         p1 = src_actual.points[i]        
         p2 = src_ref.points[i]                                          
-        dist = np.linalg.norm(p1-p2)                            #Calculamos la distancia euclídea entre ambos puntos
+        dist = np.linalg.norm(p1-p2)                            # Calculamos la distancia euclídea entre ambos puntos
         dist_tot = dist_tot + dist                              # Acumulamos las distancias encontradas
-   
     error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
 
     # dist = src_actual.compute_point_cloud_distance(src_ref)
@@ -103,14 +99,15 @@ def error_referencia(src, t1, t2): #(nube de la escena, tranformación referenci
     # s_dist = sum(dist)
     # l_dist = len(dist)
     # error = s_dist/l_dist
+
     return error
 
-
+start = time.time()
 
 # Cargamos las transformaciones guardadas
 icp_ref = np.load('icp.npy')
 ransac_ref =  np.load('ransac.npy')
-tic_tot =  time.time()
+
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
 
@@ -199,8 +196,6 @@ print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 
 # draw_registration_result(pcd, objeto, result_icp.transformation)
 
-
-
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
 # Acumlamos las distancias
@@ -216,7 +211,7 @@ print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 # Inliers = p. dentro de umbral
 
 # Determinamos el tiempo que tarda el algoritmo entero
-finish = 1000*(time.time() - tic_tot)
+finish = 1000*(time.time() - start)
 print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 # Calculamos el error de matching de las nubes
@@ -225,16 +220,14 @@ error_icp = matching_error(pcd, objeto, result_icp.transformation)
 error_ref_ransac = error_referencia(pcd, ransac_ref, result_ransac.transformation)
 error_ref_icp = error_referencia(pcd, icp_ref, result_icp.transformation)
 
-
 print("Error de RANSAC:", error_ransac)
 print("Error de referencia para Ransac:", error_ref_ransac)
 print("Error de ICP:", error_icp)
 print("Error de referencia para ICP:", error_ref_icp, "\n", "\n")
 
-print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
-print("Tiempo de RANSAC: {:.0f} [ms]".format(t_ransac))
-print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
-
+# print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
+# print("Tiempo de RANSAC: {:.0f} [ms]".format(t_ransac))
+# print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 # # Guardamos los parámetros de lad transformaciones
 # np.save('ransac', result_ransac.transformation)
