@@ -20,14 +20,14 @@ def preprocess_point_cloud(pcd, voxel_size):
     tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=0.005*2,                               # TODO: 
-        non_max_radius=0.005*2,                               # TODO: 
-        gamma_21=0.5,                                       # TODO: Umbral
-        gamma_32=0.5  )                                     # TODO: Umbral (cuánto de parecido son los puntos)
+        salient_radius=0.005,                               # TODO: Radio que determina cuanto de grande será la vecindad para los puntos a estudiar
+        non_max_radius=0.005,                               # TODO: 
+        gamma_21=0.5,                                       # TODO: Ratio entre autovalor 2 y autovalor 1
+        gamma_32=0.5  )                                     # TODO: Ratio entre autovalor 3 y autovalor 2
     print(pcd_key)
     toc = 1000*(time.time() - tic)
     print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
-
+    
     # Calculamos los descriptores para los puntos característicos
     radius_feature = 0.01                                                           # TODO: Radio para FPFH
     pcd_desc = o3d.pipelines.registration.compute_fpfh_feature(
@@ -134,7 +134,7 @@ mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # o3d.visualization.draw_geometries([pcd3])
 
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
-
+tic_tot =  time.time()
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
 tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
@@ -152,7 +152,9 @@ print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
 tic = time.time()
-distance_threshold = voxel_size*1.5                                                             # TODO: Umbral de aceptación para RANSAC
+distance_threshold = 0.0005*1.5
+dd = 0.0005*1.5
+# print("max_correspondence_distance:", distance_threshold)                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                    # Nude de puntos de origen (con kyepoints)
     dst_key,                                                                                    # Nube de puntos de destino (con kyepoints)
@@ -167,10 +169,10 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
     criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
-# print(result_ransac)
+print(result_ransac)
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
-
+t_ransac = toc
 # draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
@@ -197,7 +199,7 @@ print("Tiempo de ICP: {:.0f} [ms]".format(toc))
 
 draw_registration_result(pcd, objeto, result_icp.transformation)
 
-print(result_ransac.transformation)
+
 
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
@@ -214,7 +216,7 @@ print(result_ransac.transformation)
 # Inliers = p. dentro de umbral
 
 # Determinamos el tiempo que tarda el algoritmo entero
-finish = 1000*(time.time() - tic)
+finish = 1000*(time.time() - tic_tot)
 print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 # Calculamos el error de matching de las nubes
@@ -227,11 +229,11 @@ error_ref_icp = error_referencia(pcd, icp_ref, result_icp.transformation)
 print("Error de RANSAC:", error_ransac)
 print("Error de referencia para Ransac:", error_ref_ransac)
 print("Error de ICP:", error_icp)
-print("Error de referencia para ICP:", error_ref_icp)
+print("Error de referencia para ICP:", error_ref_icp, "\n", "\n")
 
-
-
-
+# print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
+# print("Tiempo de RANSAC: {:.0f} [ms]".format(t_ransac))
+# print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 
 # # Guardamos los parámetros de lad transformaciones
