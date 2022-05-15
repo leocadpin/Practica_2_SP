@@ -122,7 +122,6 @@ objeto = o3d.io.read_point_cloud("s0_plant_corr.pcd")       # Nube de puntos de 
 distance_threshold = 0.025
 ransac_n = 3
 num_iterations = 1000
-voxel_size = 0.0005
 
 # Eliminamos los planos dominantes de grosor threshold = 0,025 m
 pcd1 = plane_elimination(pcd, distance_threshold, ransac_n, num_iterations)
@@ -133,6 +132,8 @@ mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
 
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
+voxel_size = 0.005
+
 tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
 # o3d.visualization.draw_geometries([src_voxel])
@@ -149,8 +150,8 @@ print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
 tic = time.time()
-distance_threshold = 0.0005*1.5
-dd = 0.0005*1.5
+distance_threshold = voxel_size*1.5
+# dd = 0.0005*1.5
 # print("max_correspondence_distance:", distance_threshold)                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                    # Nude de puntos de origen (con kyepoints)
@@ -169,8 +170,8 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
 print(result_ransac)
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
-t_ransac = toc
-# draw_registration_result(mesa, objeto, result_ransac.transformation)
+draw_registration_result(mesa, objeto, result_ransac.transformation)
+# t_ransac = toc
 
 # Refinamiento local de la registración de emparejamientos
 tic = time.time()
@@ -193,8 +194,7 @@ result_icp = o3d.pipelines.registration.registration_icp(
 # print(result_icp)
 toc = 1000*(time.time() - tic)
 print("Tiempo de ICP: {:.0f} [ms]".format(toc))
-
-# draw_registration_result(pcd, objeto, result_icp.transformation)
+draw_registration_result(pcd, objeto, result_icp.transformation)
 
 # ERROR MEDIO
 # Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
@@ -221,8 +221,8 @@ error_ref_ransac = error_referencia(pcd, ransac_ref, result_ransac.transformatio
 error_ref_icp = error_referencia(pcd, icp_ref, result_icp.transformation)
 
 print("Error de RANSAC:", error_ransac)
-print("Error de referencia para Ransac:", error_ref_ransac)
 print("Error de ICP:", error_icp)
+print("Error de referencia para Ransac:", error_ref_ransac)
 print("Error de referencia para ICP:", error_ref_icp, "\n", "\n")
 
 # print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
