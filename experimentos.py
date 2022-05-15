@@ -168,7 +168,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # TODO: Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
-    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
+    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
 print(result_ransac)
 toc = 1000*(time.time() - tic)
 print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
@@ -231,9 +231,9 @@ print("Error de referencia para Ransac:", error_ref_ransac)
 print("Error de ICP:", error_icp)
 print("Error de referencia para ICP:", error_ref_icp, "\n", "\n")
 
-# print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
-# print("Tiempo de RANSAC: {:.0f} [ms]".format(t_ransac))
-# print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
+print("aawaga", dd, "|---|", result_ransac.fitness, "|---|", result_ransac.inlier_rmse, "|---|", len(result_ransac.correspondence_set), "|---|", error_ransac, "|---|", error_icp, "|---|", error_ref_ransac, "|---|", error_ref_icp)
+print("Tiempo de RANSAC: {:.0f} [ms]".format(t_ransac))
+print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 
 # # Guardamos los parámetros de lad transformaciones
