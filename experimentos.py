@@ -110,7 +110,7 @@ def error_referencia(src, t1, t2): #(nube de la escena, tranformación referenci
 # Cargamos las transformaciones guardadas
 icp_ref = np.load('icp.npy')
 ransac_ref =  np.load('ransac.npy')
-
+tic_tot =  time.time()
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
 
@@ -134,7 +134,7 @@ mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # o3d.visualization.draw_geometries([pcd3])
 
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
-tic_tot =  time.time()
+
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
 tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
