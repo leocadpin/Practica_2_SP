@@ -6,7 +6,7 @@ import time
 # FUNCIÓN PARA FILTRAR LA NUBE DE PUNTOS Y SACAR SUS KEYPOINTS Y DESCRIPTORES
 def preprocess_point_cloud(pcd, voxel_size):
     # Estimación de normales
-    radius_normal = 0.01                                                        # TODO: Radio de búsqueda de las normales (vecinos más cercanos)
+    radius_normal = 0.01                                                        # Radio de búsqueda de las normales (vecinos más cercanos)
     pcd.estimate_normals(                                                       
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
     
@@ -17,14 +17,14 @@ def preprocess_point_cloud(pcd, voxel_size):
     # Extraemos los puntos característicos
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=0.005,                               # TODO: Radio de vecindad esférica para detectar los puntos clave
-        non_max_radius=0.005,                               # TODO: Radio máximo de supresión (para que los keypoints no se repiten)
-        gamma_21=0.5,                                       # TODO: Límite superior de la relación entre dos valores propios
-        gamma_32=0.5  )                                     # TODO: Límite superior de la relación entre dos valores propios
+        salient_radius=0.005,                               # Radio de vecindad esférica para detectar los puntos clave
+        non_max_radius=0.005,                               # Radio máximo de supresión para conseguir el conjunto que mejor ajuste los keypoints
+        gamma_21=0.5,                                       # Ratio superior entre los autovalores 1 y 2 para descartar puntos con poca dispersión
+        gamma_32=0.5  )                                     # Ratio superior entre los autovalores 2 y 3 para descartar puntos con poca dispersión
     print(pcd_key)
 
     # Calculamos los descriptores para los puntos característicos
-    radius_feature = 0.01                                                           # TODO: Radio para FPFH
+    radius_feature = 0.01                                                           # Radio para la vecindad de los keypoints
     pcd_desc = o3d.pipelines.registration.compute_fpfh_feature(
         pcd_key,                                                                    # Nube de puntos de keypoints
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))    # Buscamos vecinos cercanos (como máximo 100)
@@ -36,7 +36,7 @@ def plane_elimination(pcd, threshold, ransac, it):
     # Busca un plano dominante que tiene mayor cantidad de puntos
     _, inliers = pcd.segment_plane(                             # Devuelve los puntos que están dentro del plano dominante
         distance_threshold=threshold,                           # Grueso máximo que puede tener el plano (en m) 
-        ransac_n=ransac,                                        # TODO: Al tratarse de un plano, son 3 puntos
+        ransac_n=ransac,                                        # Minimo número que hace falta para estimar el plano (3)
         num_iterations=it )                                     # Número de veces que se ejecuta RANSAC
     inlier_cloud = pcd.select_by_index(inliers)                 # Nube de puntos (dominantes)
     outlier_cloud = pcd.select_by_index(inliers, invert=True)   # Nube de puntos (no dominantes)
@@ -107,22 +107,22 @@ dst_voxel, dst_desc, dst_key = preprocess_point_cloud(objeto, voxel_size)   # OB
 # o3d.visualization.draw_geometries([dst_key])
 
 # Computamos los emparejamientos entre los descriptores
-distance_threshold = voxel_size*1.5                                                             # TODO: Umbral de aceptación para RANSAC
+distance_threshold = voxel_size*1.5                                                             # Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                    # Nude de puntos de origen (con kyepoints)
     dst_key,                                                                                    # Nube de puntos de destino (con kyepoints)
     src_desc,                                                                                   # Descriptores de la nube de puntos de origen
     dst_desc,                                                                                   # Descriptores de la nube de puntos de destino
-    mutual_filter=True,                                                                         # TODO: 
+    mutual_filter=True,                                                                         # Habilita el filtro mutuo de modo que la correspondencia de la correspondencia del punto de origen sea ella misma 
     max_correspondence_distance=distance_threshold,                                             # Distancia máxima de pares de puntos de correspondencia
     estimation_method=o3d.pipelines.registration.TransformationEstimationPointToPoint(False),   # Método de estimación de los puntos
     ransac_n=4,                                                                                 # Ajuste RANSAC con 4 correspondencias
     checkers=[
-        o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # TODO: Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
+        o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
-    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
-# print(result_ransac)
+    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100(numero de comprobaciones ))
+# print(result_ransac)                                                                                                                                                                                                                   
 draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
@@ -135,13 +135,13 @@ draw_registration_result(mesa, objeto, result_ransac.transformation)
 # dst_temp.estimate_normals(                                                      # Estimación de normales
 #         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = voxel_size*0.4                                         # TODO: Umbral de aceptación para ICP
+distance_threshold = voxel_size*0.4                                         # Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
     pcd,                                                                    # Nube de puntos del origen
     objeto,                                                                 # Nube de puntos del destino
-    distance_threshold,                                                     # TODO: 
+    distance_threshold,                                                      
     result_ransac.transformation,                                           # Transformación con RANSAC
-    o3d.pipelines.registration.TransformationEstimationPointToPlane())      # TODO: 
+    o3d.pipelines.registration.TransformationEstimationPointToPlane())      # Método de estimación del modelo
 # print(result_icp)
 draw_registration_result(pcd, objeto, result_icp.transformation)
 
