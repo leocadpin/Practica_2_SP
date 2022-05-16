@@ -3,12 +3,10 @@ import numpy as np
 import copy
 import time
 
-start = time.time()
-
 # FUNCIÓN PARA FILTRAR LA NUBE DE PUNTOS Y SACAR SUS KEYPOINTS Y DESCRIPTORES
 def preprocess_point_cloud(pcd, voxel_size):
     # Estimación de normales
-    radius_normal = 0.01                                                        # TODO: Radio para las normales
+    radius_normal = 0.01                                                        # TODO: Radio de búsqueda de las normales (vecinos más cercanos)
     pcd.estimate_normals(                                                       
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
     
@@ -17,16 +15,13 @@ def preprocess_point_cloud(pcd, voxel_size):
     # print(pcd_voxel)
        
     # Extraemos los puntos característicos
-    tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=0.005,                               # TODO: 
-        non_max_radius=0.005,                               # TODO: 
-        gamma_21=0.5,                                       # TODO: Umbral
-        gamma_32=0.5  )                                     # TODO: Umbral (cuánto de parecido son los puntos)
+        salient_radius=0.005,                               # TODO: Radio de vecindad esférica para detectar los puntos clave
+        non_max_radius=0.005,                               # TODO: Radio máximo de supresión (para que los keypoints no se repiten)
+        gamma_21=0.5,                                       # TODO: Límite superior de la relación entre dos valores propios
+        gamma_32=0.5  )                                     # TODO: Límite superior de la relación entre dos valores propios
     print(pcd_key)
-    toc = 1000*(time.time() - tic)
-    print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
 
     # Calculamos los descriptores para los puntos característicos
     radius_feature = 0.01                                                           # TODO: Radio para FPFH
@@ -64,7 +59,6 @@ def matching_error(src, dst, transformation):
     src_temp.transform(transformation)                          # Transformación de la nube origen
 
     pcd_tree = o3d.geometry.KDTreeFlann(src_temp)               # Creamos un árbol de puntos de la nube origen (escena)
-    # print(pcd_tree)
 
     dist_tot = 0
     num_points = len(np.asarray(dst_temp.points))               # Número de puntos de la nube destino (objeto)
@@ -77,25 +71,7 @@ def matching_error(src, dst, transformation):
 
     return error
 
-# def error_referencia(src, t1, t2):
-
-#     src_ref = copy.deepcopy(src)
-#     src_actual = copy.deepcopy(src)
-
-#     src_ref.transform(t1)
-#     src_actual.transform(t2)
-
-#     num_points = len(np.asarray(src_actual.points))               # Número de puntos de la nube destino (objeto)
-#     for i in range (num_points):                                # Para cada punto del objeto
-#         p1 = src_actual.points[i]
-#         p2 = src_ref.points[i]                                  # Cogemos un punto
-#         dist=p1-p2
-#                                                                 # (dist) Sacamos la distancia entre el punto p y su vecino
-#         dist_tot = dist_tot + dist                           # Acumulamos las distancias encontradas
-#     error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
-
-
-
+start = time.time()
 
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
@@ -122,22 +98,15 @@ mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
 
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
-tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
 # o3d.visualization.draw_geometries([src_voxel])
 # o3d.visualization.draw_geometries([src_key])
-toc = 1000*(time.time() - tic)
-print("Tiempo de filtrado y procesamiento de la escena: {:.0f} [ms]".format(toc))
 
-tic = time.time()
 dst_voxel, dst_desc, dst_key = preprocess_point_cloud(objeto, voxel_size)   # OBJETO (destino)
 # o3d.visualization.draw_geometries([dst_voxel])
 # o3d.visualization.draw_geometries([dst_key])
-toc = 1000*(time.time() - tic)
-print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
-tic = time.time()
 distance_threshold = voxel_size*1.5                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
     src_key,                                                                                    # Nude de puntos de origen (con kyepoints)
@@ -154,51 +123,30 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
     ],
     criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # TODO: Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100)
 # print(result_ransac)
-toc = 1000*(time.time() - tic)
-print("Tiempo de RANSAC: {:.0f} [ms]".format(toc))
-
 draw_registration_result(mesa, objeto, result_ransac.transformation)
 
 # Refinamiento local de la registración de emparejamientos
-tic = time.time()
-src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
-dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
+# src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
+# dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
 
-radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
-src_temp.estimate_normals(                                                      # Estimación de normales
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
-dst_temp.estimate_normals(                                                      # Estimación de normales
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
+# radius_normal = voxel_size*2                                                    # Radio para las normales
+# src_temp.estimate_normals(                                                      # Estimación de normales
+#         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
+# dst_temp.estimate_normals(                                                      # Estimación de normales
+#         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
+distance_threshold = voxel_size*0.4                                         # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
-    src_temp,                                                                   # Nube de puntos del origen
-    dst_temp,                                                                   # Nube de puntos del destino
-    distance_threshold,                                                         # TODO: 
-    result_ransac.transformation,                                               # Transformación con RANSAC
-    o3d.pipelines.registration.TransformationEstimationPointToPlane())          # TODO: 
+    pcd,                                                                    # Nube de puntos del origen
+    objeto,                                                                 # Nube de puntos del destino
+    distance_threshold,                                                     # TODO: 
+    result_ransac.transformation,                                           # Transformación con RANSAC
+    o3d.pipelines.registration.TransformationEstimationPointToPlane())      # TODO: 
 # print(result_icp)
-toc = 1000*(time.time() - tic)
-print("Tiempo de ICP: {:.0f} [ms]".format(toc))
-
 draw_registration_result(pcd, objeto, result_icp.transformation)
 
-# ERROR MEDIO
-# Calculamos las distancias entre los vecinos más cercanos )objeto respecto a la escena)
-# Acumlamos las distancias
-# Dividimos entre la cantidad de puntos
-
-# ¿como tener normales fiables?
-# calculamos las normales de todos los puntos con radio chiquito
-# luego sacamos keypoints as usual
-# luego le decimos a los keypoints normales les corresponden
-
-# RESULTADO del ransac
-# fitness = inliers / total %
-# Inliers = p. dentro de umbral
-
 # Determinamos el tiempo que tarda el algoritmo entero
-finish = 1000*(time.time() - tic)
+finish = 1000*(time.time() - start)
 print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 
 # Calculamos el error de matching de las nubes

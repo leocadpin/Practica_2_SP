@@ -14,11 +14,11 @@ def preprocess_point_cloud(pcd, voxel_size):
     print("Tiempo de las normales: {:.0f} [ms]".format(toc))
 
     # Filtramos las nubes para reducir su tamaño
-    # tic = time.time()
+    tic = time.time()
     pcd_voxel = pcd.voxel_down_sample(voxel_size)
     # print(pcd_voxel)
-    # toc = 1000*(time.time() - tic)
-    # print("Tiempo de los voxels: {:.0f} [ms]".format(toc))
+    toc = 1000*(time.time() - tic)
+    print("Tiempo de los voxels: {:.0f} [ms]".format(toc))
        
     # Extraemos los puntos característicos
     tic = time.time()
@@ -133,10 +133,13 @@ ransac_n = 3
 num_iterations = 1000
 
 # Eliminamos los planos dominantes de grosor threshold = 0,025 m
+tic = time.time()
 pcd1 = plane_elimination(pcd, distance_threshold, ransac_n, num_iterations)
 pcd2 = plane_elimination(pcd1, distance_threshold, ransac_n, num_iterations)
 mesa = plane_elimination(pcd2, distance_threshold, ransac_n, num_iterations)
 # o3d.visualization.draw_geometries([pcd3])
+toc = 1000*(time.time() - tic)
+print("Tiempo de eliminación de planos: {:.0f} [ms]".format(toc))
 
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
 
@@ -159,7 +162,7 @@ print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
 tic = time.time()
-distance_threshold = 0.0005*1.5
+distance_threshold = voxel_size*1.5
 # dd = 0.0005*1.5
 # print("max_correspondence_distance:", distance_threshold)                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
@@ -187,13 +190,13 @@ tic = time.time()
 src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
 dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
 
-radius_normal = 0.0005*2                                                    # TODO: Radio para las normales
+radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
 src_temp.estimate_normals(                                                      # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 dst_temp.estimate_normals(                                                      # Estimación de normales
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = 0.0005*0.4                                             # TODO: Umbral de aceptación para ICP
+distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
     src_temp,                                                                   # Nube de puntos del origen
     dst_temp,                                                                   # Nube de puntos del destino
