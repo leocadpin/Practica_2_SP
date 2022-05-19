@@ -85,23 +85,23 @@ def matching_error(src, dst, transformation):
     return error
 
 # FUNCIÓN QUE CALCULA LA DISTANCIA DE LA TRANSFORMACIÓN RESPECTO A UNA REFERENCIA 
-def error_referencia(src, t1, t2): # (nube de la escena, tranformación referencia, transformación calculada actual)
-    src_ref = copy.deepcopy(src)                                # Copiamos la escena dos veces
+def error_referencia(src, t1, t2):                      # (nube de la escena, tranformación referencia, transformación calculada actual)
+    src_ref = copy.deepcopy(src)                        # Copiamos la escena dos veces
     src_actual = copy.deepcopy(src)
-    src_ref.transform(t1)                                       # Transformamos la nube aplicando la referencia
-    src_actual.transform(t2)                                    # Transformamos la nube aplicando la transformación actual
-    num_points = len(np.asarray(src_actual.points))             # Número de puntos de ambas nubes
+    src_ref.transform(t1)                               # Transformamos la nube aplicando la referencia
+    src_actual.transform(t2)                            # Transformamos la nube aplicando la transformación actual
+    num_points = len(np.asarray(src_actual.points))     # Número de puntos de ambas nubes
     dist_tot = 0
 
     # print(t1)
     # print(t2)
 
-    for i in range (num_points):                                # Para cada par de puntos i de ambas nubes
+    for i in range (num_points):                        # Para cada par de puntos i de ambas nubes
         p1 = src_actual.points[i]        
         p2 = src_ref.points[i]                                          
-        dist = np.linalg.norm(p1-p2)                            # Calculamos la distancia euclídea entre ambos puntos
-        dist_tot = dist_tot + dist                              # Acumulamos las distancias encontradas
-    error = dist_tot/float(num_points)                          # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
+        dist = np.linalg.norm(p1-p2)                    # Calculamos la distancia euclídea entre ambos puntos
+        dist_tot = dist_tot + dist                      # Acumulamos las distancias encontradas
+    error = dist_tot/float(num_points)                  # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
 
     # dist = src_actual.compute_point_cloud_distance(src_ref)
     # # print(dist)
@@ -186,20 +186,20 @@ draw_registration_result(mesa, objeto, result_ransac.transformation)
 # t_ransac = toc
 
 # Refinamiento local de la registración de emparejamientos
-tic = time.time()
-src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
-dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
+# tic = time.time()
+# src_temp = copy.deepcopy(pcd)                                                   # Copia de la nube de la escena
+# dst_temp = copy.deepcopy(objeto)                                                # Copia de la nube del objeto
 
-radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
-src_temp.estimate_normals(                                                      # Estimación de normales
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
-dst_temp.estimate_normals(                                                      # Estimación de normales
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
+# radius_normal = voxel_size*2                                                    # TODO: Radio para las normales
+# src_temp.estimate_normals(                                                      # Estimación de normales
+#         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
+# dst_temp.estimate_normals(                                                      # Estimación de normales
+#         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
 distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
-    src_temp,                                                                   # Nube de puntos del origen
-    dst_temp,                                                                   # Nube de puntos del destino
+    pcd,                                                                   # Nube de puntos del origen
+    objeto,                                                                   # Nube de puntos del destino
     distance_threshold,                                                         # TODO: 
     result_ransac.transformation,                                               # Transformación con RANSAC
     o3d.pipelines.registration.TransformationEstimationPointToPlane())          # TODO: 

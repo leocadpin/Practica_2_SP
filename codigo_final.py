@@ -71,7 +71,38 @@ def matching_error(src, dst, transformation):
 
     return error
 
+# FUNCIÓN QUE CALCULA LA DISTANCIA DE LA TRANSFORMACIÓN RESPECTO A UNA REFERENCIA 
+def error_referencia(src, t1, t2):                      # (nube de la escena, tranformación referencia, transformación calculada actual)
+    src_ref = copy.deepcopy(src)                        # Copiamos la escena dos veces
+    src_actual = copy.deepcopy(src)
+    src_ref.transform(t1)                               # Transformamos la nube aplicando la referencia
+    src_actual.transform(t2)                            # Transformamos la nube aplicando la transformación actual
+    num_points = len(np.asarray(src_actual.points))     # Número de puntos de ambas nubes
+    dist_tot = 0
+
+    # print(t1)
+    # print(t2)
+
+    for i in range (num_points):                        # Para cada par de puntos i de ambas nubes
+        p1 = src_actual.points[i]        
+        p2 = src_ref.points[i]                                          
+        dist = np.linalg.norm(p1-p2)                    # Calculamos la distancia euclídea entre ambos puntos
+        dist_tot = dist_tot + dist                      # Acumulamos las distancias encontradas
+    error = dist_tot/float(num_points)                  # Calculamos el error como la media de las distancias entre las nubes (para el total de puntos del objeto)
+
+    # dist = src_actual.compute_point_cloud_distance(src_ref)
+    # # print(dist)
+    # s_dist = sum(dist)
+    # l_dist = len(dist)
+    # error = s_dist/l_dist
+
+    return error
+
 start = time.time()
+
+# Cargamos las transformaciones guardadas
+icp_ref = np.load('icp.npy')
+ransac_ref =  np.load('ransac.npy')
 
 # Creamos una nube de puntos
 pcd = o3d.geometry.PointCloud()
@@ -87,7 +118,7 @@ objeto = o3d.io.read_point_cloud("s0_plant_corr.pcd")       # Nube de puntos de 
 distance_threshold = 0.025
 ransac_n = 3
 num_iterations = 1000
-voxel_size = 0.0005
+voxel_size = 0.0005     # Tamaño de voxel de 5mm
 
 # Eliminamos los planos dominantes de grosor threshold = 0,025 m
 pcd1 = plane_elimination(pcd, distance_threshold, ransac_n, num_iterations)
@@ -121,7 +152,7 @@ result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),                 # Comprueba si son similares las longitudes de cualquiera de los 2 bordes arbitrarios extraídos individualmente de las correspondencias de origen y destino
         o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)     # Comprueba si las nubes de puntos alineadas están cerca (menos del umbral especificado)
     ],
-    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100(numero de comprobaciones ))
+    criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 100))                 # Criterios de convergencia (por defecto, max_iteration=100000 y max_validaion=100 (numero de comprobaciones ))
 # print(result_ransac)                                                                                                                                                                                                                   
 draw_registration_result(mesa, objeto, result_ransac.transformation)
 
@@ -152,9 +183,14 @@ print("Tiempo total del algoritmo: {:.0f} [ms]".format(finish))
 # Calculamos el error de matching de las nubes
 error_ransac = matching_error(pcd, objeto, result_ransac.transformation)
 error_icp = matching_error(pcd, objeto, result_icp.transformation)
+error_ref_ransac = error_referencia(pcd, ransac_ref, result_ransac.transformation)
+error_ref_icp = error_referencia(pcd, icp_ref, result_icp.transformation)
+
 print("Error de RANSAC:", error_ransac)
 print("Error de ICP:", error_icp)
+print("Error de referencia para Ransac:", error_ref_ransac)
+print("Error de referencia para ICP:", error_ref_icp)
 
-# # Guardamos los parámetros de lad transformaciones
+# Guardamos los parámetros de lad transformaciones
 # np.save('ransac', result_ransac.transformation)
 # np.save('icp', result_icp.transformation)
