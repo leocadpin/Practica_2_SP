@@ -7,7 +7,7 @@ import time
 def preprocess_point_cloud(pcd, voxel_size):
     # Estimación de normales
     tic = time.time()
-    radius_normal = 0.01                                                        # TODO: Radio para las normales
+    radius_normal = 0.05                                                        # TODO: Radio para las normales
     pcd.estimate_normals(                                                       
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
     toc = 1000*(time.time() - tic)
@@ -24,10 +24,10 @@ def preprocess_point_cloud(pcd, voxel_size):
     tic = time.time()
     pcd_key = o3d.geometry.keypoint.compute_iss_keypoints(
         pcd_voxel,                                          # Nube de puntos filtrada
-        salient_radius=0.005,                               # TODO: Radio que determina cuanto de grande será la vecindad para los puntos a estudiar
+        salient_radius=0.01,                               # TODO: Radio que determina cuanto de grande será la vecindad para los puntos a estudiar
         non_max_radius=0.005,                               # TODO: 
-        gamma_21=0.5,                                       # TODO: Ratio entre autovalor 2 y autovalor 1
-        gamma_32=0.5  )                                     # TODO: Ratio entre autovalor 3 y autovalor 2
+        gamma_21=0.6,                                       # TODO: Ratio entre autovalor 2 y autovalor 1
+        gamma_32=0.4  )                                     # TODO: Ratio entre autovalor 3 y autovalor 2
     print(pcd_key)
     toc = 1000*(time.time() - tic)
     print("Tiempo de los keypoints: {:.0f} [ms]".format(toc))
@@ -130,7 +130,7 @@ objeto = o3d.io.read_point_cloud("s0_plant_corr.pcd")       # Nube de puntos de 
 # Definimos los parámetros para las fucniones
 distance_threshold = 0.025
 ransac_n = 3
-num_iterations = 1000
+num_iterations = 70
 
 # Eliminamos los planos dominantes de grosor threshold = 0,025 m
 tic = time.time()
@@ -144,7 +144,7 @@ print("Tiempo de eliminación de planos: {:.0f} [ms]".format(toc))
 # (Tambien se puede usar UNIFORM SAMPLING para resumir puntos)
 
 # Filtramos la nube de puntos reducida y detectamos sus descriptores
-voxel_size = 0.0005
+voxel_size = 0.001
 
 tic = time.time()
 src_voxel, src_desc, src_key = preprocess_point_cloud(mesa, voxel_size)     # MESA (origen)
@@ -162,7 +162,7 @@ print("Tiempo de filtrado y procesamiento del objeto: {:.0f} [ms]".format(toc))
 
 # Computamos los emparejamientos entre los descriptores
 tic = time.time()
-distance_threshold = voxel_size*1.5
+distance_threshold = 0.0015
 # dd = 0.0005*1.5
 # print("max_correspondence_distance:", distance_threshold)                                                             # TODO: Umbral de aceptación para RANSAC
 result_ransac = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
@@ -196,7 +196,7 @@ draw_registration_result(mesa, objeto, result_ransac.transformation)
 # dst_temp.estimate_normals(                                                      # Estimación de normales
 #         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))  # Buscamos vecinos cercanos (como máximo 30)
 
-distance_threshold = voxel_size*0.4                                             # TODO: Umbral de aceptación para ICP
+distance_threshold = 0.0002                                             # TODO: Umbral de aceptación para ICP
 result_icp = o3d.pipelines.registration.registration_icp(
     pcd,                                                                   # Nube de puntos del origen
     objeto,                                                                   # Nube de puntos del destino
